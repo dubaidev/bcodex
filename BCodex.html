@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>
+    
+* {
+  box-sizing: border-box;
+}
+
+
+
+textarea {
+   resize: none;
+}
+
+.btn {
+  width: 15%;
+  border: 1px solid grey;
+  background: #f0f0f0;
+  padding: 9pt 2pt;
+  font-size: 9pt;
+  cursor: pointer;
+  display: inline-block;
+}
+
+
+</style>
+</head>
+
+
+<body style="margin-left:2%;margin-right:2%;background-color: #A4A096;">
+<div style="max-width:740px;margin: 0 auto;padding:40px; background-color: #F0F0F0;">
+    <label id="infoLbl" for="infotext" style="font-size:18pt;">Paste Text 1 for learn:</label><br/><br/>
+    <center>
+        
+        <textarea id="textIn" name="textIn" rows="30" style="width: 100%; box-sizing: border-box;">Test text here...</textarea>
+        <br/><br/>
+        <button class="btn" id="OKBtn">OK</button>
+        
+        <br/>
+        
+    </center>
+    <br/>
+    <label id=\"footer\" for=\"infotext\" style=\"font-size:9pt;\">On every step use long different texts for best results. Good idea is to paste the content of whole books as a text. Words found in first 5 texts will be best protected.</label><br/><br/>
+    
+    <canvas id="myCanvas" width="400" height="100" style="border:0px solid #d3d3d3;position:absolute; top:0; left:0;"/>
+    Your browser does not support the canvas element.
+    </canvas>
+</div>
+    
+<script>
+    
+    var infoLabel = document.getElementById("infoLbl");
+    var txtArea = document.getElementById("textIn");
+    var okbtn = document.getElementById("OKBtn");
+    
+    var state = 1;
+    var progressState = 0;
+    var _wordArrays = new Array();
+    var _bytesArray1 = new Array();
+    var _bytesArray2 = new Array();
+    var _oneTimePadArray = new Array();
+    var _maskArray = new Array();
+    
+    
+    function shuffleArray(arr)
+    {
+        
+        var len = arr.length;
+        var i = 0;
+        
+        var val = null;
+        var max = len - 1;
+        var newIndex = 0;
+        
+        if (len < 3)
+        {
+            return;
+        }
+        
+        
+        for (i=0;i<len;i++)
+        {
+            newIndex = Math.floor(Math.random() * max);
+            val = arr[i];
+            arr[i] = arr[newIndex];
+            arr[newIndex] = val;
+        }
+        
+    }
+    
+    function createBytesArray()
+    {
+        var len = 256;
+        var i = 0;
+        for (i=0;i<len;i++)
+        {
+            _bytesArray1.push(i);
+            _bytesArray2.push(i);
+        }
+        
+        shuffleArray(_bytesArray1);
+        shuffleArray(_bytesArray2);
+    }
+
+
+    function createMaskArray()
+    {
+        var len = 256;
+        var i = 0;
+        for (i=0;i<len;i++)
+        {
+            _maskArray.push("" + i);
+        }
+        
+        shuffleArray(_maskArray);
+    }
+    
+    function progress(msgtext)
+    {
+        var scrollingElement = (document.scrollingElement || document.body);
+        var height = scrollingElement.scrollHeight;
+        var pos = scrollingElement.scrollTop;
+        var vHeight = scrollingElement.clientHeight;
+
+        var index = pos / vHeight;
+        var all = height / vHeight;
+        index += 1;
+        all += 1;
+
+        index = index.toFixed(0);
+        all = all.toFixed(0);
+
+        var c = document.getElementById("myCanvas");
+        if (c.style.display === "none") {
+          c.style.display = "block";
+        }
+        var ctop = pos + ((vHeight - c.height)/2);
+        c.style.top = "" + ctop + "px";
+        var edge = (window.innerWidth - c.offsetWidth)/2;
+
+        c.style.left = "" + edge + "px";
+        var ctx = c.getContext("2d");
+
+        ctx.clearRect(0, 0, c.width, c.height);
+
+        ctx.fillStyle = "#505050aa";
+        ctx.fillRect(10, 10, c.width - 20, c.height - 20);
+
+        ctx.fillStyle = "#FaFaFa";
+
+        ctx.font = "14px Unknown Font, sans-serif";
+        ctx.fillStyle = "#FaFaFa";
+
+        var text = msgtext;
+        ctx.fillText(text, 20, 30);
+                          
+         
+        var progressX = 20;
+        var i = 0;
+        
+        text = "";
+        for (i = 0;i<progressState;i++)
+        {
+            text += ".";
+        }
+                        
+                          
+        progressState += 1;
+        ctx.fillText(text, 20, 70);
+        
+        if (progressState > 10)
+        {
+            progressState = 0;
+        }
+
+    }
+
+    function msg(msgtext)
+    {
+        var scrollingElement = (document.scrollingElement || document.body);
+        var height = scrollingElement.scrollHeight;
+        var pos = scrollingElement.scrollTop;
+        var vHeight = scrollingElement.clientHeight;
+
+        var index = pos / vHeight;
+        var all = height / vHeight;
+        index += 1;
+        all += 1;
+
+        index = index.toFixed(0);
+        all = all.toFixed(0);
+
+        var c = document.getElementById("myCanvas");
+        if (c.style.display === "none") {
+          c.style.display = "block";
+        }
+        var ctop = pos + ((vHeight - c.height)/3);
+        c.style.top = "" + ctop + "px";
+        var edge = (window.innerWidth - c.offsetWidth)/2;
+
+        c.style.left = "" + edge + "px";
+        var ctx = c.getContext("2d");
+
+        ctx.clearRect(0, 0, c.width, c.height);
+
+        ctx.fillStyle = "#505050aa";
+        ctx.fillRect(10, 10, c.width - 20, c.height - 20);
+
+        ctx.fillStyle = "#FaFaFa";
+
+        ctx.font = "20px Unknown Font, sans-serif";
+        ctx.fillStyle = "#FaFaFa";
+
+        var text = msgtext;
+        ctx.fillText(text, 20, 30);
+                          
+         
+        
+    }
+                          
+
+    function hideProgress()
+    {
+        var c = document.getElementById("myCanvas");
+        c.style.display = "none";
+        
+    }
+    
+    
+    function prepareState()
+    {
+        if (state > 7)
+        {
+            return;
+        }
+        
+        hideProgress();
+            
+        switch (state)
+        {
+            case 1:
+                infoLabel.innerHTML = "Paste text 1 for learn phase (long text works better):";
+                txtArea.value = "";
+                break;
+                
+            case 2:
+                infoLabel.innerHTML = "Paste text 2 for learn phase (long text works better):";
+                txtArea.value = "";
+                break;
+                
+            case 3:
+                infoLabel.innerHTML = "Paste text 3 for learn phase (long text works better):";
+                txtArea.value = "";
+                break;
+                
+            case 4:
+                infoLabel.innerHTML = "Paste text 4 for learn phase (long text works better):";
+                txtArea.value = "";
+                break;
+                
+            case 5:
+                infoLabel.innerHTML = "Paste text 5 for learn phase (long text works better):";
+                txtArea.value = "";
+                break;
+                
+            case 6:
+                infoLabel.innerHTML = "Paste one-time pad text(OTP) (long text works better):";
+                txtArea.value = "";
+                break;
+                
+            case 7:
+                infoLabel.innerHTML = "Paste mask text (long readable text with many short sentances):";
+                txtArea.value = "";
+                break;
+              
+            default:
+                break;
+                
+        }
+        
+    }
+    
+    okbtn.onclick = function() {
+        //on OK
+        handleOK();
+        
+        
+        state += 1;
+        prepareState();
+        
+    }
+    
+    
+    
+    function handleOK()
+    {
+        if (state <= 5)
+        {
+            learnPhase();
+            return;
+        }
+        
+        if (state == 6)
+        {
+            setOneTimePad();
+            return;
+        }
+        
+        
+        if (state == 7)
+        {
+            setMask();
+            return;
+        }
+        
+    }
+                          
+    function charIsDelimiter(chr)
+    {
+        switch (chr)
+        {
+            case ' ':
+            case '\n':
+            case '\r':
+            case '\t':
+            case '\'':
+            case '\"':
+            case '?':
+            case '<':
+            case '>':
+            case '(':
+            case ')':
+            case ';':
+            case '”':
+            case '[':
+            case ']':
+            case '@':
+            case '.':
+            case '…':
+            return true;
+            
+            default:
+            return false;
+        }
+        
+    }
+                          
+    function findWordArray(word)
+    {
+        var len = _wordArrays.length;
+        var i = 0;
+        
+        if (len <= 0)
+        {
+            return null;
+        }
+        
+        var chrW = word.charAt(0);
+        
+        var arr = null;
+        
+        for  (i=0;i<len;i++)
+        {
+            arr = _wordArrays[i];
+            if (arr[0].charAt(0) === chrW)
+            {
+                return arr;
+            }
+        }
+        
+        
+        return null;
+        
+    }
+                          
+                          
+    function isInMask(sentence)
+    {
+        var len = _maskArray.length;
+        var i = 0;
+        
+        
+        for (i=0;i<len;i++)
+        {
+            if (_maskArray[i] === sentence)
+            {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+                          
+    function addToMask(sentence, index)
+    {
+        if (sentence.length <= 0)
+        {
+            return;
+        }
+        
+        
+        var len = _maskArray.length;
+        var i = 0;
+        var slen = sentence.length;
+        
+        for (i=0;i<len;i++)
+        {
+            if (_maskArray[i] === sentence)
+            {
+                return;
+            }
+        }
+        
+        if (index < len)
+        {
+            _maskArray[index] = sentence;
+        }
+        else
+        {
+            for (i=0;i<len;i++)
+            {
+                if (_maskArray[i].length > slen)
+                {
+                    _maskArray[i] = sentence;
+                    return;
+                }
+            }
+        }
+    }
+    
+                          
+    function addWordToArray(arr,word)
+    {
+        var len = arr.length;
+        var i = 0;
+        for (i=0;i<len;i++)
+        {
+            if (arr[i] === word)
+            {
+                return;
+            }
+        }
+        
+        arr.push(word);
+    }
+                          
+    function addWordLearn(word)
+    {
+        if (word.length <= 0)
+        {
+            return;
+        }
+        
+        var arr = findWordArray(word);
+        if (arr != null)
+        {
+            addWordToArray(arr,word);
+            return;
+        }
+        
+        if (_wordArrays.length >= 89)
+        {
+            return;
+        }
+        
+        arr = new Array();
+        arr.push(word);
+        
+        
+        _wordArrays.push(arr);
+    }
+
+    function learnPhase()
+    {
+        var text = txtArea.value;
+        var word = "";
+        var i = 0;
+        var len = text.length;
+        var chr = ""
+        var counter = 0;
+        
+        
+        progressState = 0;
+        progress("Processing. Please Wait");
+        
+        
+        if (len <= 0)
+        {
+            return false;
+        }
+        
+        
+        
+        for (i=0;i<len;i++)
+        {
+            chr = text.charAt(i);
+            if (charIsDelimiter(chr))
+            {
+                if (word.length > 0)
+                {
+                    addWordLearn(word);
+                    word = "";
+                }
+            }else{
+                word += chr;
+            }
+            
+            counter += 1;
+            if (counter > 2000)
+            {
+                progress("Processing. Please Wait");
+                counter = 0;
+            }
+        }
+        
+        
+        return true;
+        
+    }
+                          
+                          
+    function setOneTimePad()
+    {
+        var text = txtArea.value;
+        var i = 0;
+        var len = text.length;
+        var chr = null;
+        var byte = 0;
+        
+        
+        if (len <= 0)
+        {
+            return false;
+        }
+        
+        var oneTimePadSize = 0;
+        
+        for (i=0;i<len;i++)
+        {
+            chr = text.charCodeAt(i);
+            byte = chr >>> 8;
+            if (byte > 0)
+            {
+                _oneTimePadArray.push(byte);
+            }
+            
+            
+            byte = chr & 0xFF;
+            if (byte > 0)
+            {
+                _oneTimePadArray.push(byte);
+            }
+            
+            oneTimePadSize += 2;
+            if (oneTimePadSize > 20000)
+            {
+                break;
+            }
+        }
+        
+        shuffleArray(_oneTimePadArray);
+        shuffleArray(_wordArrays);
+        
+        len = _wordArrays.length;
+        for (i=0;i<len;i++)
+        {
+            shuffleArray(_wordArrays[i]);
+        }
+        
+        return true;
+    }
+         
+    function download(filename, text)
+    {
+      var element = document.createElement('a');
+      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+      element.setAttribute('download', filename);
+
+      element.style.display = 'none';
+      document.body.appendChild(element);
+
+      element.click();
+
+      document.body.removeChild(element);
+    }
+                          
+    function setMask()
+    {
+        var text = txtArea.value;
+        var sentance = "";
+        var i = 0;
+        var len = text.length;
+        var chr = ""
+        var counter = 0;
+        
+        
+        progressState = 0;
+        progress("Processing. Please Wait");
+        
+        
+        if (len <= 0)
+        {
+            return false;
+        }
+        
+        var indexInMask = 0;
+        
+        for (i=0;i<len;i++)
+        {
+            chr = text.charAt(i);
+            if ((chr === ".") || (chr === "?") || (chr === "!") || (chr === "\n"))
+            {
+                if (sentance.length > 0)
+                {
+                    if (indexInMask < _maskArray.length)
+                    {
+                        if (isInMask(sentance) == false)
+                        {
+                            _maskArray[indexInMask] = sentance;
+                            indexInMask += 1;
+                        }
+                        
+                    }else{
+                        addToMask(sentance,indexInMask);
+                    }
+                    sentance = "";
+                }
+            }else{
+                if (sentance.length == 0)
+                {
+                    if ((chr != "\"") && (chr != "\'") && (chr != " ") && (chr != "’") && (chr != "\n") && (chr != "\r") && (chr != "\t") && (chr != "‘") && (chr != "“"))
+                    {
+                        sentance += chr;
+                    }
+                }
+                else if ((chr != "\"") && (chr != "\'") && (chr != "’") && (chr != "\n") && (chr != "\r") && (chr != "\t") && (chr != "‘") && (chr != "“") && (chr != ","))
+                {
+                    sentance += chr;
+                }
+            }
+            
+            counter += 1;
+            if (counter > 2000)
+            {
+                progress("Processing. Please Wait");
+                counter = 0;
+            }
+        }
+        
+        shuffleArray(_maskArray);
+        createBTranslator();
+        
+        return true;
+    }
+    
+    
+    function getTranslatorHTMLStart()
+    {
+        var html = "" +
+        "<!DOCTYPE html>\n" +
+        "<html>\n" +
+        "<head>\n" +
+        "<meta charset=\"UTF-8\"/>\n" +
+        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>\n" +
+        "<style>\n" +
+        "\n" +
+        "* {\n" +
+        "  box-sizing: border-box;\n" +
+        "}\n" +
+        "\n" +
+        "\n" +
+        "textarea {\n" +
+        "   resize: none;\n" +
+        "}\n" +
+        "\n" +
+        ".btn {\n" +
+        "  width: 15%;\n" +
+        "  border: 1px solid grey;\n" +
+        "  background: #f0f0f0;\n" +
+        "  padding: 9pt 2pt;\n" +
+        "  font-size: 9pt;\n" +
+        "  cursor: pointer;\n" +
+        "  display: inline-block;\n" +
+        "}\n" +
+        "\n" +
+        "\n" +
+        "</style>\n" +
+        "</head>\n" +
+        "\n" +
+        "\n" +
+        "<body style=\"margin-left:2%;margin-right:2%;background-color: #A4A096;\">\n" +
+        "<div style=\"max-width:940px;margin: 0 auto;padding:20px; background-color: #F0F0F0;\">\n" +
+        "    <label id=\"infoLbl\" for=\"infotext\" style=\"font-size:12pt;\">Every BTranslator is unique. Both users need to copy of the same BTranslator.html file to communicate privately</label><br/><br/>\n" +
+        "    <center>\n" +
+        "        <label id=\"codeLbl\" for=\"infotext\" style=\"font-size:12pt;display: inline-block;width: 49%;\">CODE MESSAGE:</label>\n" +
+        "        <label id=\"codeLbl\" for=\"infotext\" style=\"font-size:12pt;display: inline-block;width: 49%;\">YOUR TEXT:</label><br/>\n" +
+        "        <textarea id=\"textCode\" name=\"textCode\" rows=\"30\" style=\"width: 49%; box-sizing: border-box;\"></textarea>\n" +
+        "        <textarea id=\"textPlain\" name=\"textPlain\" rows=\"30\" style=\"width: 49%; box-sizing: border-box;\"></textarea>\n" +
+        "        <br/><br/>\n" +
+        "        <button class=\"btn\" id=\"OKBtn\">TRANSLATE</button>\n" +
+        "\n" +
+        "        <br/>\n" +
+        "\n" +
+        "    </center>\n" +
+        "        <br/>\n" +
+        "    <label id=\"footer\" for=\"infotext\" style=\"font-size:9pt;\">Every BTranslator is unique. Every message can be decoded only by the exact same copy of BTranslator.html. You can create as many Btranslators as you want so you may use them for different chanels of PRIVATE communication. The message can be send via email, messaging apps or what ever as it can be decoded only by the exact same BTranslator.</label><br/><br/>\n" +
+        "    <label id=\"footer2\" for=\"infotext\" style=\"font-size:9pt;\">All of Creation is related. And the hurt of one is the hurt of all. And the honor of one is the honor of all. And whatever we do affects everything in the universe.</label><br/><br/>\n" +
+        "\n" +
+        "\n" +
+        "    <canvas id=\"myCanvas\" width=\"400\" height=\"100\" style=\"border:0px solid #d3d3d3;position:absolute; top:0; left:0;\"/>\n" +
+        "    Your browser does not support the canvas element.\n" +
+        "    </canvas>\n" +
+        "</div>\n" +
+        "\n" +
+        "<script>\n";
+        
+        
+        
+        return html;
+    }
+                          
+    
+    function getTranslatorHTMLEnd()
+    {
+       var html = "" +
+       "<" + "/" + "script" + ">\n" +
+       "\n" +
+       "</body>\n" +
+       "</html>";
+       
+       
+           
+       return html;
+    }
+         
+    function getScriptStart()
+    {
+        var html = "" +
+        "\n" +
+        "    var infoLabel = document.getElementById(\"infoLbl\");\n" +
+        "    var txtAreaCode = document.getElementById(\"textCode\");\n" +
+        "    var txtAreaPlain = document.getElementById(\"textPlain\");\n" +
+        "    var okbtn = document.getElementById(\"OKBtn\");\n" +
+        "\n" +
+        "    var progressState = 0;\n" +
+        "    var _wordArrays = new Array();\n" +
+        "    var _bytesArray1 = new Array();\n" +
+        "    var _bytesArray2 = new Array();\n" +
+        "    var _oneTimePadArray = new Array();\n" +
+        "    var _maskArray = new Array();\n" +
+        "\n" +
+        "\n";
+        
+        
+        return html;
+    }
+         
+    function getScriptInitArrays()
+    {
+        var html = "" +
+        "\n" +
+        "    function initArrays()\n" +
+        "    {\n";
+        
+        var len = 0;
+        var i = 0;
+        var j = 0;
+        var len2 = 0;
+        
+        html += "" +
+        "        var arr = null;\n\n";
+        
+        len = _wordArrays.length;
+        for (i=0;i<len;i++)
+        {
+            len2 = _wordArrays[i].length;
+            html += "" +
+            "        arr = new Array();\n";
+            for (j=0;j<len2;j++)
+            {
+                html += "" +
+                "        arr.push(\"" + _wordArrays[i][j] + "\");\n";
+            }
+            html += "" +
+            "        _wordArrays.push(arr);\n\n\n";
+        }
+        
+        
+        
+        
+        len = _bytesArray1.length;
+        for (i=0;i<len;i++)
+        {
+            html += "" +
+            "        _bytesArray1.push(" + _bytesArray1[i] + ");\n";
+        }
+        html += "\n\n\n";
+        
+        
+        
+        
+        len = _bytesArray2.length;
+        for (i=0;i<len;i++)
+        {
+            html += "" +
+            "        _bytesArray2.push(" + _bytesArray2[i] + ");\n";
+        }
+        html += "\n\n\n";
+        
+        
+        
+        len = _oneTimePadArray.length;
+        for (i=0;i<len;i++)
+        {
+            html += "" +
+            "        _oneTimePadArray.push(" + _oneTimePadArray[i] + ");\n";
+        }
+        html += "\n\n\n";
+        
+        
+        
+        len = _maskArray.length;
+        for (i=0;i<len;i++)
+        {
+            html += "" +
+            "        _maskArray.push(\"" + _maskArray[i] + "\");\n";
+        }
+        html += "\n\n\n";
+        
+        
+        
+        html += "    }\n";
+        "\n" +
+        "\n";
+        
+        
+        return html;
+    }
+                          
+                        
+    function getScriptLogic()
+    {
+        var html = "";
+        html += "\n";
+        html += "\n";
+        html += "          okbtn.onclick = function() {\n";
+        html += "              handleOK();\n";
+        html += "          }\n";
+        html += "\n";
+        html += "\n";
+        html += "          function charIsDelimiter(chr)\n";
+        html += "          {\n";
+        html += "              switch (chr)\n";
+        html += "              {\n";
+        html += "                  case \' \':\n";
+        html += "                  case \'\\n\':\n";
+        html += "                  case \'\\r\':\n";
+        html += "                  case \'\\t\':\n";
+        html += "                  case \'\\\'\':\n";
+        html += "                  case \'\\\"\':\n";
+        html += "                  case \'?\':\n";
+        html += "                  case \'<\':\n";
+        html += "                  case \'>\':\n";
+        html += "                  case \'(\':\n";
+        html += "                  case \')\':\n";
+        html += "                  case \';\':\n";
+        html += "                  case \'”\':\n";
+        html += "                  case \'[\':\n";
+        html += "                  case \']\':\n";
+        html += "                  case \'@\':\n";
+        html += "                  case \'.\':\n";
+        html += "                  case \'…\':\n";
+        html += "                  return true;\n";
+        html += "\n";
+        html += "                  default:\n";
+        html += "                  return false;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "          }\n";
+        html += "\n";
+        html += "\n";
+        html += "          function handleOK()\n";
+        html += "          {\n";
+        html += "              var text = txtAreaCode.value;\n";
+        html += "              if ((text != null) && (text.length > 0))\n";
+        html += "              {\n";
+        html += "                  decode();\n";
+        html += "                  return;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              encode();\n";
+        html += "          }\n";
+        html += "\n";
+        html += "\n";
+        html += "          function createOTPOffset()\n";
+        html += "          {\n";
+        html += "              var len = _oneTimePadArray.length;\n";
+        html += "              var max = len - 1;\n";
+        html += "              var offset = Math.floor(Math.random() * max);\n";
+        html += "              return offset;\n";
+        html += "          }\n";
+        html += "\n";
+        html += "          function findByteIndex(bytesArray, byte)\n";
+        html += "          {\n";
+        html += "              var len = bytesArray.length;\n";
+        html += "              var i = 0;\n";
+        html += "\n";
+        html += "              for (i=0;i<len;i++)\n";
+        html += "              {\n";
+        html += "                  if (byte == bytesArray[i])\n";
+        html += "                  {\n";
+        html += "                      return i & 0xFF;\n";
+        html += "                  }\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              return byte;\n";
+        html += "          }\n";
+        html += "\n";
+        html += "          function addCharToCode(chr,otpOffset,codeAray)\n";
+        html += "          {\n";
+        html += "              var offset = otpOffset;\n";
+        html += "              var bytesArray = _bytesArray1;\n";
+        html += "              var arrayByte = 91;\n";
+        html += "              if (Math.floor(Math.random() * 3) == 1)\n";
+        html += "              {\n";
+        html += "                  bytesArray = _bytesArray2;\n";
+        html += "                  arrayByte = 92;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              byte = arrayByte & 0xFF;\n";
+        html += "\n";
+        html += "              byte += _oneTimePadArray[offset];\n";
+        html += "              if (byte > 255)\n";
+        html += "              {\n";
+        html += "                  byte = byte - 255;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              offset += 1;\n";
+        html += "              if (offset >= _oneTimePadArray.length)\n";
+        html += "              {\n";
+        html += "                  offset = 0;\n";
+        html += "              }\n";
+        html += "              codeAray.push(byte);\n";
+        html += "\n";
+        html += "              var cCode = chr.charCodeAt(0);\n";
+        html += "              byte = cCode >>> 8;\n";
+        html += "              byte = findByteIndex(bytesArray, byte);\n";
+        html += "              byte += _oneTimePadArray[offset];\n";
+        html += "              if (byte > 255)\n";
+        html += "              {\n";
+        html += "                  byte = byte - 255;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              offset += 1;\n";
+        html += "              if (offset >= _oneTimePadArray.length)\n";
+        html += "              {\n";
+        html += "                  offset = 0;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "\n";
+        html += "              codeAray.push(byte);\n";
+        html += "\n";
+        html += "\n";
+        html += "              byte = cCode & 0xFF;\n";
+        html += "              byte = findByteIndex(bytesArray, byte);\n";
+        html += "              byte += _oneTimePadArray[offset];\n";
+        html += "              if (byte > 255)\n";
+        html += "              {\n";
+        html += "                  byte = byte - 255;\n";
+        html += "              }";
+        html += "\n";
+        html += "\n";
+        html += "              codeAray.push(byte);\n";
+        html += "\n";
+        html += "              return 3;\n";
+        html += "          }\n";
+        html += "\n";
+        html += "\n";
+        html += "          function findwordArray(chr)\n";
+        html += "          {\n";
+        html += "              var len = _wordArrays.length;\n";
+        html += "              if (len <= 0)\n";
+        html += "              {\n";
+        html += "                  return -1;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              var i = 0;\n";
+        html += "              var arr = null;\n";
+        html += "              var word = null;\n";
+        html += "\n";
+        html += "              for (i=0;i<len;i++)\n";
+        html += "              {\n";
+        html += "                  arr = _wordArrays[i];\n";
+        html += "                  if (arr.length > 0)\n";
+        html += "                  {\n";
+        html += "                      word = arr[0];\n";
+        html += "                      if (word.length > 0)\n";
+        html += "                      {\n";
+        html += "                          if (word.charAt(0) === chr)\n";
+        html += "                          {\n";
+        html += "                              return i;\n";
+        html += "                          }\n";
+        html += "                      }\n";
+        html += "                  }\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              return -1;\n";
+        html += "          }\n";
+        html += "\n";
+        html += "          function findWordPos(arr, word)\n";
+        html += "          {\n";
+        html += "              var len = arr.length;\n";
+        html += "              var i = 0;\n";
+        html += "              for (i=0;i<len;i++)\n";
+        html += "              {\n";
+        html += "                  if (word === arr[i])\n";
+        html += "                  {\n";
+        html += "                      return i;\n";
+        html += "                  }\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              return -1;\n";
+        html += "\n";
+        html += "          }\n";
+        html += "\n";
+        html += "          function encriptByte(byte,offset)\n";
+        html += "          {\n";
+        html += "              byte += _oneTimePadArray[offset];\n";
+        html += "              if (byte > 255)\n";
+        html += "              {\n";
+        html += "                  byte = byte - 255;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              return byte;\n";
+        html += "          }\n";
+        html += "\n";
+        html += "\n";
+        html += "          function addWordToCode(word,otpOffset,codeAray)\n";
+        html += "          {\n";
+        html += "              if (word.length <= 0)\n";
+        html += "              {\n";
+        html += "                  return 0;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              var offset = otpOffset;\n";
+        html += "              var chr = word.charAt(0);\n";
+        html += "              var arr = null;\n";
+        html += "              var arrPos = findwordArray(chr);\n";
+        html += "              var pos = -1;\n";
+        html += "              var wordPos = -1;\n";
+        html += "              var byte = 0;\n";
+        html += "              var len = 0;\n";
+        html += "              var i = 0;\n";
+        html += "              var oneTPLen = _oneTimePadArray.length;\n";
+        html += "              var add = 0;\n";
+        html += "              var result = 0;\n";
+        html += "\n";
+        html += "              if (arrPos >= 0)\n";
+        html += "              {\n";
+        html += "                  arr = _wordArrays[arrPos];\n";
+        html += "                  wordPos = findWordPos(arr, word);\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              if (wordPos >= 0)\n";
+        html += "              {";
+        html += "                  byte = arrPos & 0xFF;\n";
+        html += "                  byte = encriptByte(byte,offset);\n";
+        html += "                  offset += 1;\n";
+        html += "                  if (offset >= oneTPLen)\n";
+        html += "                  {\n";
+        html += "                      offset = 0;\n";
+        html += "                  }\n";
+        html += "                  codeAray.push(byte);\n";
+        html += "\n";
+        html += "\n";
+        html += "                  byte = wordPos >>> 8;\n";
+        html += "                  byte = encriptByte(byte,offset);\n";
+        html += "                  offset += 1;\n";
+        html += "                  if (offset >= oneTPLen)\n";
+        html += "                  {\n";
+        html += "                      offset = 0;\n";
+        html += "                  }\n";
+        html += "                  codeAray.push(byte);\n";
+        html += "\n";
+        html += "                  byte = wordPos & 0xFF;\n";
+        html += "                  byte = encriptByte(byte,offset);\n";
+        html += "                  offset += 1;\n";
+        html += "                  if (offset >= oneTPLen)\n";
+        html += "                  {\n";
+        html += "                      offset = 0;\n";
+        html += "                  }\n";
+        html += "\n";
+        html += "                  codeAray.push(byte);\n";
+        html += "                  return 3;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "\n";
+        html += "              len = word.length;\n";
+        html += "\n";
+        html += "              for (i=0;i<len;i++)\n";
+        html += "              {\n";
+        html += "                  chr = word.charAt(i);\n";
+        html += "                  add = addCharToCode(chr,offset,codeAray);\n";
+        html += "                  result += add;\n";
+        html += "                  offset += add;\n";
+        html += "                  if (offset >= oneTPLen)\n";
+        html += "                  {\n";
+        html += "                      offset = offset - oneTPLen;\n";
+        html += "                  }\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              return result;\n";
+        html += "\n";
+        html += "          }\n";
+        html += "\n";
+        html += "          function getMaskedText(codeAray)\n";
+        html += "          {\n";
+        html += "              var text = \"\";\n";
+        html += "              var len = codeAray.length;\n";
+        html += "              var i = 0;\n";
+        html += "              var v = 0;\n";
+        html += "\n";
+        html += "              for  (i=0;i<len;i++)\n";
+        html += "              {\n";
+        html += "                  v = codeAray[i];\n";
+        html += "                  text += _maskArray[v];\n";
+        html += "                  text += \". \";\n";
+        html += "                  if (Math.floor(Math.random() * 3) == 1)\n";
+        html += "                  {\n";
+        html += "                      text += \"\\n\";\n";
+        html += "                  }\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              return text;\n";
+        html += "          }\n";
+        html += "\n";
+        html += "          function encode()\n";
+        html += "          {\n";
+        html += "              txtAreaCode.value = \"\";\n";
+        html += "              var text = txtAreaPlain.value;\n";
+        html += "              if ((text == null) && (text.length == 0))\n";
+        html += "              {\n";
+        html += "                  return;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              var word = \"\";\n";
+        html += "              var i = 0;\n";
+        html += "              var len = text.length;\n";
+        html += "              var chr = \"\"\n";
+        html += "              var counter = 0;\n";
+        html += "\n";
+        html += "              var codeAray = new Array();\n";
+        html += "\n";
+        html += "              var otpOffset = createOTPOffset();\n";
+        html += "              var byte = otpOffset >>> 8;\n";
+        html += "              codeAray.push(byte);\n";
+        html += "              byte = otpOffset & 0xFF;\n";
+        html += "              codeAray.push(byte);\n";
+        html += "\n";
+        html += "              var otpLen = _oneTimePadArray.length;\n";
+        html += "\n";
+        html += "              for (i=0;i<len;i++)\n";
+        html += "              {\n";
+        html += "                  chr = text.charAt(i);\n";
+        html += "                  if (charIsDelimiter(chr))\n";
+        html += "                  {\n";
+        html += "                      if (word.length > 0)\n";
+        html += "                      {\n";
+        html += "                          otpOffset += addWordToCode(word,otpOffset,codeAray);\n";
+        html += "                          if (otpOffset >= otpLen)\n";
+        html += "                          {\n";
+        html += "                              otpOffset = otpOffset - otpLen;\n";
+        html += "                          }\n";
+        html += "                          word = \"\";\n";
+        html += "                      }\n";
+        html += "\n";
+        html += "                      otpOffset += addCharToCode(chr,otpOffset,codeAray);\n";
+        html += "                      if (otpOffset >= otpLen)\n";
+        html += "                      {\n";
+        html += "                          otpOffset = otpOffset - otpLen;\n";
+        html += "                      }\n";
+        html += "                  }else{\n";
+        html += "                      word += chr;\n";
+        html += "                  }\n";
+        html += "\n";
+        html += "\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              if (word.length > 0)\n";
+        html += "              {\n";
+        html += "                    otpOffset += addWordToCode(word,otpOffset,codeAray);\n";
+        html += "                    if (otpOffset >= otpLen)\n";
+        html += "                    {\n";
+        html += "                         otpOffset = otpOffset - otpLen;\n";
+        html += "                    }\n";
+        html += "                    word = \"\";\n";
+        html += "              }\n";
+        html += "\n";
+        html += "\n";
+        html += "              var result = getMaskedText(codeAray);\n";
+        html += "              txtAreaCode.value = result;\n";
+        html += "          }\n";
+        html += "\n";
+        html += "\n";
+        html += "          function unmaskSentence(codeAray,sentance)\n";
+        html += "          {\n";
+        html += "              var len = _maskArray.length;\n";
+        html += "              var i = 0;\n";
+        html += "              var code = -1;\n";
+        html += "\n";
+        html += "              for (i=0;i<len;i++)\n";
+        html += "              {\n";
+        html += "                  if (sentance === _maskArray[i])\n";
+        html += "                  {\n";
+        html += "                      code = i;\n";
+        html += "                      codeAray.push(code);\n";
+        html += "                      return true;\n";
+        html += "                  }\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              return false;\n";
+        html += "          }\n";
+        html += "\n";
+        html += "\n";
+        html += "          function decodeCodeArray(codeAray)\n";
+        html += "          {\n";
+        html += "              var len = codeAray.length;\n";
+        html += "              var i = 0;\n";
+        html += "              var otpOffset = 0;\n";
+        html += "              var otplen = _oneTimePadArray.length;\n";
+        html += "              var byte = 0;\n";
+        html += "\n";
+        html += "              if (len < 3)\n";
+        html += "              {\n";
+        html += "                  return;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              byte = codeAray[0] & 0xFF;\n";
+        html += "              otpOffset = byte << 8;\n";
+        html += "              byte = codeAray[1] & 0xFF;\n";
+        html += "              otpOffset = otpOffset | byte;\n";
+        html += "\n";
+        html += "              if (otpOffset >= otplen)\n";
+        html += "              {\n";
+        html += "                  return;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "\n";
+        html += "              for (i=2;i<len;i++)\n";
+        html += "              {\n";
+        html += "                  byte = codeAray[i] & 0xFF;\n";
+        html += "                  byte -= _oneTimePadArray[otpOffset];\n";
+        html += "                  if (byte < 0)\n";
+        html += "                  {\n";
+        html += "                      byte = 255 + byte;\n";
+        html += "                  }\n";
+        html += "\n";
+        html += "                  codeAray[i] = byte;\n";
+        html += "                  otpOffset += 1;\n";
+        html += "                  if (otpOffset >= otplen)\n";
+        html += "                  {\n";
+        html += "                      otpOffset = otpOffset - otplen;\n";
+        html += "                  }\n";
+        html += "              }\n";
+        html += "\n";
+        html += "          }\n";
+        html += "\n";
+        html += "\n";
+        html += "          function textByNumbers(arrayIndex,byte1,byte2)\n";
+        html += "          {\n";
+        html += "              var index = byte1 << 8;\n";
+        html += "              index = index | (byte2 & 0xFF);\n";
+        html += "              var text = \"\";\n";
+        html += "\n";
+        html += "              if (arrayIndex < 91)\n";
+        html += "              {\n";
+        html += "                  if (arrayIndex < 0)\n";
+        html += "                  {\n";
+        html += "                      return \"\";\n";
+        html += "                  }\n";
+        html += "\n";
+        html += "                  var array = _wordArrays[arrayIndex];\n";
+        html += "                  text = array[index];\n";
+        html += "                  return text;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              var chrCode = 0;\n";
+        html += "              var b = 0;\n";
+        html += "              if (arrayIndex == 91)\n";
+        html += "              {\n";
+        html += "                  b = _bytesArray1[byte1];\n";
+        html += "                  chrCode = b << 8;\n";
+        html += "                  b = _bytesArray1[byte2];\n";
+        html += "                  chrCode = chrCode | (b & 0xFF);\n";
+        html += "                  text = String.fromCharCode(chrCode);\n";
+        html += "                  return text;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              if (arrayIndex == 92)\n";
+        html += "              {\n";
+        html += "                  b = _bytesArray2[byte1];\n";
+        html += "                  chrCode = b << 8;\n";
+        html += "                  b = _bytesArray2[byte2];\n";
+        html += "                  chrCode = chrCode | (b & 0xFF);\n";
+        html += "                  text = String.fromCharCode(chrCode);\n";
+        html += "                  return text;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              return \"\";\n";
+        html += "          }\n";
+        html += "\n";
+        html += "\n";
+        html += "          function recreateText(codeAray)\n";
+        html += "          {\n";
+        html += "              var text = \"\";\n";
+        html += "              var i = 0;\n";
+        html += "              var len = codeAray.length;\n";
+        html += "\n";
+        html += "              var byte = 0;\n";
+        html += "\n";
+        html += "              if (len < 3)\n";
+        html += "              {\n";
+        html += "                  return \"\";\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              var arrayIndex = 0;\n";
+        html += "              var byte1 = 0;\n";
+        html += "              var byte2 = 0;\n";
+        html += "              var state = 0;\n";
+        html += "\n";
+        html += "              for (i=2;i<len;i++)\n";
+        html += "              {\n";
+        html += "                  if (state == 0)\n";
+        html += "                  {\n";
+        html += "                      arrayIndex = codeAray[i] & 0xFF;\n";
+        html += "                  }\n";
+        html += "                  else if (state == 1)\n";
+        html += "                  {\n";
+        html += "                      byte1 = codeAray[i] & 0xFF;\n";
+        html += "                  }\n";
+        html += "                  else{\n";
+        html += "                      byte2 = codeAray[i] & 0xFF;\n";
+        html += "                      text += textByNumbers(arrayIndex,byte1,byte2);\n";
+        html += "                  }\n";
+        html += "\n";
+        html += "                  state += 1;\n";
+        html += "                  if (state > 2)\n";
+        html += "                  {\n";
+        html += "                      state = 0;\n";
+        html += "                  }\n";
+        html += "              }\n";
+        html += "\n";
+        html += "\n";
+        html += "              return text;\n";
+        html += "\n";
+        html += "          }\n";
+        html += "\n";
+        html += "\n";
+        html += "\n";
+        html += "          function decode()\n";
+        html += "          {\n";
+        html += "\n";
+        html += "              txtAreaPlain.value = \"\";\n";
+        html += "              var text = txtAreaCode.value;\n";
+        html += "              var sentance = \"\";\n";
+        html += "              var i = 0;\n";
+        html += "              var len = text.length;\n";
+        html += "              var chr = \"\"\n";
+        html += "              var counter = 0;\n";
+        html += "\n";
+        html += "              if ((text == null) && (len == 0))\n";
+        html += "              {\n";
+        html += "                  return;\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              var codeAray = new Array();\n";
+        html += "              var otpOffset = 0;\n";
+        html += "\n";
+        html += "              for (i=0;i<len;i++)\n";
+        html += "              {\n";
+        html += "                  chr = text.charAt(i);\n";
+        html += "                  if (chr === \".\")\n";
+        html += "                  {\n";
+        html += "                      if (sentance.length > 0)\n";
+        html += "                      {\n";
+        html += "                          if (unmaskSentence(codeAray,sentance) == false)\n";
+        html += "                          {\n";
+        html += "                              return;\n";
+        html += "                          }\n";
+        html += "                          sentance = \"\";\n";
+        html += "                      }\n";
+        html += "                  }else{\n";
+        html += "                      if (sentance.length == 0)\n";
+        html += "                      {\n";
+        html += "                          if ((chr != \" \") && (chr != \"\\n\"))\n";
+        html += "                          {\n";
+        html += "                              sentance += chr;\n";
+        html += "                          }\n";
+        html += "                      }\n";
+        html += "                      else\n";
+        html += "                      {\n";
+        html += "                          if (chr != \"\\n\")\n";
+        html += "                          {\n";
+        html += "                              sentance += chr;\n";
+        html += "                          }\n";
+        html += "                      }\n";
+        html += "                  }\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              if (sentance.length > 0)\n";
+        html += "              {\n";
+        html += "                  unmaskSentence(codeAray,sentance);\n";
+        html += "                  sentance = \"\";\n";
+        html += "              }\n";
+        html += "\n";
+        html += "              decodeCodeArray(codeAray);\n";
+        html += "              var result = recreateText(codeAray);\n";
+        html += "\n";
+        html += "              txtAreaPlain.value = result;\n";
+        html += "\n";
+        html += "          }\n";
+        html += "\n";
+        html += "          initArrays();\n";
+        html += "\n";
+
+        return html;
+    }
+                          
+    
+                          
+    function createBTranslator()
+    {
+        
+        msg("BTranslator.html is created! Download it");
+        
+        var html = getTranslatorHTMLStart();
+        html += getScriptStart();
+        html += getScriptInitArrays();
+        html += getScriptLogic();
+        html += getTranslatorHTMLEnd();
+        
+        download("BTranslator.html",html);
+    }
+       
+    
+                          
+                          
+    
+    createBytesArray();
+    createMaskArray();
+                          
+    hideProgress();
+    prepareState();
+    
+    
+</script>
+
+</body>
+</html>
+
