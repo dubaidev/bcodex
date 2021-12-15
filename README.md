@@ -8,3 +8,5 @@ Every BTranslator is unique so message created with one BTranslator can only be 
 by the same BTranslator and no other.
 Encoded message is also plain text.
 So enjoy your privacy!
+
+This is a shared secret encryption decription method
